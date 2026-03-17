@@ -717,6 +717,9 @@ const lossReasons = {
 };
 
 
+let chartsInitialized = false;
+let chartInstances = [];
+
 // ============================================
 // THEME
 // ============================================
@@ -908,9 +911,6 @@ document.getElementById("filter-status").addEventListener("change", renderEnable
 // ============================================
 // TAB 3: DEAL INTELLIGENCE
 // ============================================
-
-let chartsInitialized = false;
-let chartInstances = [];
 
 function getChartColors() {
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
