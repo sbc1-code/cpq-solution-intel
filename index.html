@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPQ Solution Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0b0b0b;
+  --surface: #141414;
+  --border: #222;
+  --text: #e8e8e8;
+  --muted: #888;
+  --accent: #8a9a7b;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,.4);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --threat-high: #c0392b;
+  --threat-medium: #e67e22;
+  --threat-low: #8a9a7b;
+  --status-current: #8a9a7b;
+  --status-needs-update: #e67e22;
+  --status-in-progress: #3498db;
+  --status-planned: #888;
+}
+
+[data-theme="light"] {
+  --bg: #f5f3f0;
+  --surface: #fff;
+  --border: #d5d3cf;
+  --text: #1a1a1a;
+  --muted: #6b6b6b;
+  --accent: #5c6b50;
+  --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --threat-high: #c0392b;
+  --threat-medium: #d35400;
+  --threat-low: #5c6b50;
+  --status-current: #5c6b50;
+  --status-needs-update: #d35400;
+  --status-in-progress: #2980b9;
+  --status-planned: #6b6b6b;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: background .25s, color .25s;
+}
+
+/* ---- Header ---- */
+.header {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-left h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+}
+
+.header-left p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.theme-toggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s, border-color .2s;
+}
+.theme-toggle:hover { border-color: var(--accent); }
+.theme-toggle svg { width: 18px; height: 18px; fill: var(--text); transition: fill .2s; }
+.theme-toggle .icon-sun { display: none; }
+[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+[data-theme="light"] .theme-toggle .icon-sun { display: block; }
+
+/* ---- Tabs ---- */
+.tabs {
+  max-width: 1120px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .2s, border-color .2s;
+  position: relative;
+  bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ---- Main content ---- */
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ---- Stat cards row ---- */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  transition: background .25s, border-color .25s;
+}
+
+.stat-card .label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 4px;
+}
+
+.stat-card .value {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+}
+
+.stat-card .value.accent { color: var(--accent); }
+
+/* ---- Competitor cards ---- */
+.competitor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.comp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: border-color .2s, transform .15s, background .25s;
+}
+.comp-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+.comp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.comp-card-header h3 { font-size: 16px; font-weight: 600; }
+
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.badge-segment {
+  background: rgba(138,154,123,.15);
+  color: var(--accent);
+}
+
+.badge-threat-high { background: rgba(192,57,43,.15); color: var(--threat-high); }
+.badge-threat-medium { background: rgba(230,126,34,.15); color: var(--threat-medium); }
+.badge-threat-low { background: rgba(138,154,123,.15); color: var(--threat-low); }
+
+.comp-meta { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+
+.comp-section {
+  margin-bottom: 8px;
+}
+
+.comp-section-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 4px;
+}
+
+.comp-section p {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ---- Modal ---- */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 100;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+.modal-overlay.open { display: flex; }
+
+[data-theme="light"] .modal-overlay { background: rgba(0,0,0,.3); }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 640px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 28px 32px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  transition: background .25s, border-color .25s;
+}
+
+[data-theme="light"] .modal { box-shadow: 0 20px 60px rgba(0,0,0,.12); }
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color .2s;
+}
+.modal-close:hover { color: var(--text); }
+
+.modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.modal .modal-segment { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.modal-metric {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  transition: background .25s, border-color .25s;
+}
+
+.modal-metric .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.modal-metric .value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+
+.modal-section { margin-bottom: 18px; }
+.modal-section h4 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+.modal-section ul { list-style: none; }
+.modal-section li { font-size: 14px; padding: 4px 0; padding-left: 16px; position: relative; }
+.modal-section li::before { content: ""; position: absolute; left: 0; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+/* ---- Enablement Table ---- */
+.filters-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .25s, border-color .25s, color .25s;
+}
+.filter-select:focus { outline: none; border-color: var(--accent); }
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color .25s;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead { background: var(--surface); transition: background .25s; }
+th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  transition: border-color .25s;
+}
+
+tr:last-child td { border-bottom: none; }
+
+tbody tr { transition: background .15s; }
+tbody tr:hover { background: var(--surface); }
+
+.status-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.status-current { background: rgba(138,154,123,.15); color: var(--status-current); }
+.status-needs-update { background: rgba(230,126,34,.15); color: var(--status-needs-update); }
+.status-in-progress { background: rgba(52,152,219,.15); color: var(--status-in-progress); }
+.status-planned { background: rgba(136,136,136,.15); color: var(--status-planned); }
+
+.usage-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usage-bar {
+  width: 60px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  transition: background .25s;
+}
+
+.usage-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+/* ---- Deal Intelligence ---- */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: background .25s, border-color .25s;
+}
+
+.chart-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.chart-card canvas { width: 100% !important; }
+
+.chart-card-full {
+  grid-column: 1 / -1;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 720px) {
+  .competitor-grid { grid-template-columns: 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .modal-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .header { flex-direction: column; gap: 12px; }
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>CPQ Solution Intelligence</h1>
+    <p>Competitive positioning, enablement tracking, and deal analytics for manufacturing CPQ</p>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="landscape">Competitive Landscape</button>
+  <button class="tab-btn" data-tab="enablement">Sales Enablement</button>
+  <button class="tab-btn" data-tab="deals">Deal Intelligence</button>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Tab 1: Competitive Landscape -->
+  <div class="tab-content active" id="tab-landscape">
+    <div class="stats-row" id="landscape-stats"></div>
+    <div class="competitor-grid" id="competitor-grid"></div>
+  </div>
+
+  <!-- Tab 2: Sales Enablement -->
+  <div class="tab-content" id="tab-enablement">
+    <div class="stats-row" id="enablement-stats"></div>
+    <div class="filters-row">
+      <select class="filter-select" id="filter-type">
+        <option value="all">All Types</option>
+        <option value="Battlecard">Battlecard</option>
+        <option value="Solution Brief">Solution Brief</option>
+        <option value="Pitch Deck">Pitch Deck</option>
+        <option value="Case Study">Case Study</option>
+        <option value="FAQ">FAQ</option>
+        <option value="Demo Script">Demo Script</option>
+      </select>
+      <select class="filter-select" id="filter-status">
+        <option value="all">All Statuses</option>
+        <option value="Current">Current</option>
+        <option value="Needs Update">Needs Update</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Planned">Planned</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset Name</th>
+            <th>Type</th>
+            <th>Audience</th>
+            <th>Status</th>
+            <th>Last Updated</th>
+            <th>Usage</th>
+          </tr>
+        </thead>
+        <tbody id="enablement-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab 3: Deal Intelligence -->
+  <div class="tab-content" id="tab-deals">
+    <div class="stats-row" id="deal-stats"></div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Deals by Industry Vertical</h3>
+        <canvas id="chart-verticals"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Loss Reasons Breakdown</h3>
+        <canvas id="chart-loss"></canvas>
+      </div>
+      <div class="chart-card chart-card-full">
+        <h3>Win Rate Trend (Last 8 Months)</h3>
+        <canvas id="chart-winrate"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+// ============================================
+// DATA
+// ============================================
+
+const competitors = [
+  {
+    name: "ConfigPro",
+    segment: "Enterprise",
+    threat: "High",
+    strengths: "Deep rules engine, strong ERP integrations, large professional services team",
+    weaknesses: "Slow implementation cycles, dated UI, expensive customization",
+    winRate: 52,
+    objections: [
+      "ConfigPro has been in the market longer",
+      "Their ERP integration library is more mature",
+      "References from Fortune 500 manufacturers"
+    ],
+    differentiators: [
+      "Our SaaS model reduces total cost of ownership by 40%",
+      "Modern UI drives 3x faster rep onboarding",
+      "Native CAD/PLM integration vs. ConfigPro's bolt-on approach"
+    ],
+    battlecard: [
+      "Lead with TCO comparison: their services costs inflate 2-3x over license fees",
+      "Highlight implementation speed: our avg is 12 weeks vs. their 6-9 months",
+      "Use the Hartwell Mfg case study for head-to-head displacement win"
+    ]
+  },
+  {
+    name: "QuoteSmart",
+    segment: "Mid-Market",
+    threat: "High",
+    strengths: "Easy to deploy, strong partner channel, competitive pricing, good mobile experience",
+    weaknesses: "Limited advanced configuration logic, no native CAD integration, weak in regulated industries",
+    winRate: 58,
+    objections: [
+      "QuoteSmart is easier to get started with",
+      "Their pricing is more transparent",
+      "Strong Salesforce marketplace ratings"
+    ],
+    differentiators: [
+      "Our configuration engine handles 10x more complex BOMs",
+      "Built-in compliance workflows for regulated manufacturing",
+      "Bi-directional PLM sync eliminates engineering bottlenecks"
+    ],
+    battlecard: [
+      "Ask about BOM complexity: if over 500 SKUs, QuoteSmart hits limitations",
+      "Probe on engineering change orders, their manual process is a pain point",
+      "Position as 'grow with you' vs. QuoteSmart's mid-market ceiling"
+    ]
+  },
+  {
+    name: "PriceLogic",
+    segment: "Enterprise",
+    threat: "Medium",
+    strengths: "AI-driven pricing optimization, strong analytics, good margins intelligence",
+    weaknesses: "Weak configurator, requires data science resources, limited manufacturing-specific workflows",
+    winRate: 65,
+    objections: [
+      "PriceLogic's AI pricing is best in class",
+      "Their analytics dashboards are more advanced",
+      "They just raised a $120M Series D"
+    ],
+    differentiators: [
+      "We combine configuration + pricing in one platform, no integration overhead",
+      "Purpose-built for manufacturing vs. their horizontal approach",
+      "Our guided selling works out of the box, no data science team required"
+    ],
+    battlecard: [
+      "Reframe the conversation: pricing optimization is one piece, configuration is the foundation",
+      "Ask about their configurator, it's a known gap they fill with partners",
+      "Emphasize manufacturing-specific BOM, routing, and costing workflows"
+    ]
+  },
+  {
+    name: "SpecBuilder",
+    segment: "Mid-Market",
+    threat: "Medium",
+    strengths: "Strong visual configuration, good for engineer-to-order, solid CAD output generation",
+    weaknesses: "No pricing optimization, limited CRM integrations, small customer success team",
+    winRate: 61,
+    objections: [
+      "SpecBuilder's 3D visual configurator is impressive in demos",
+      "They specialize in engineer-to-order, which is our use case",
+      "Lower upfront cost for ETO manufacturers"
+    ],
+    differentiators: [
+      "Our visual config is competitive and includes pricing + quoting in one flow",
+      "Deeper CRM integrations reduce manual data entry for sales",
+      "Enterprise-grade SLA and customer success, not a 20-person startup"
+    ],
+    battlecard: [
+      "Acknowledge their visual config strength, then expand the conversation to full quote-to-cash",
+      "Ask about CRM workflow: if they use Salesforce or HubSpot, our integration is a win",
+      "Probe on scale: SpecBuilder struggles above 50 concurrent users"
+    ]
+  },
+  {
+    name: "SellWise",
+    segment: "SMB",
+    threat: "Low",
+    strengths: "Very low price point, quick setup, good for simple product catalogs",
+    weaknesses: "No complex configuration, no manufacturing-specific features, limited reporting",
+    winRate: 78,
+    objections: [
+      "SellWise is a fraction of the cost",
+      "We can be live in two weeks with SellWise",
+      "Our products are not that complex"
+    ],
+    differentiators: [
+      "Even 'simple' manufacturers outgrow basic quoting tools within 18 months",
+      "Our starter tier is competitively priced with far more room to grow",
+      "Native manufacturing workflows vs. generic sales quoting"
+    ],
+    battlecard: [
+      "Qualify deal size: if ACV is under $15K, SellWise may actually be the right fit (walk away)",
+      "For mid-range deals, emphasize hidden costs of switching later",
+      "Use the Cascade Components case study: started 'simple,' needed rules within 6 months"
+    ]
+  },
+  {
+    name: "QuoteForge",
+    segment: "Enterprise",
+    threat: "Medium",
+    strengths: "Strong in automotive and aerospace, deep compliance features, large install base in DACH region",
+    weaknesses: "Europe-centric support, complex licensing, slow product roadmap",
+    winRate: 59,
+    objections: [
+      "QuoteForge understands our regulated industry requirements",
+      "They have more customers in our vertical",
+      "European data residency compliance is built in"
+    ],
+    differentiators: [
+      "Global support coverage, not just EMEA business hours",
+      "Simpler licensing: per-user SaaS vs. their module-based pricing",
+      "Faster release cadence: monthly updates vs. their semi-annual releases"
+    ],
+    battlecard: [
+      "If the prospect is in North America, lean into support hours and response times",
+      "Compare licensing models side by side: their 'modules' add up quickly",
+      "Highlight our API-first architecture for custom integrations"
+    ]
+  }
+];
+
+const enablementAssets = [
+  { name: "ConfigPro Competitive Battlecard", type: "Battlecard", audience: "Sales", status: "Current", updated: "2026-02-28", usage: 9 },
+  { name: "QuoteSmart Competitive Battlecard", type: "Battlecard", audience: "Sales", status: "Current", updated: "2026-03-01", usage: 8 },
+  { name: "PriceLogic Competitive Battlecard", type: "Battlecard", audience: "Sales", status: "Needs Update", updated: "2025-11-15", usage: 6 },
+  { name: "CPQ for Discrete Manufacturing", type: "Solution Brief", audience: "Prospects", status: "Current", updated: "2026-01-20", usage: 8 },
+  { name: "CPQ for Food & Beverage", type: "Solution Brief", audience: "Prospects", status: "In Progress", updated: "2026-02-10", usage: 4 },
+  { name: "Enterprise CPQ Platform Overview", type: "Pitch Deck", audience: "Sales", status: "Current", updated: "2026-02-15", usage: 9 },
+  { name: "Partner CPQ Sales Kit", type: "Pitch Deck", audience: "Partners", status: "Needs Update", updated: "2025-10-05", usage: 5 },
+  { name: "Hartwell Mfg: ETO Configuration Win", type: "Case Study", audience: "Prospects", status: "Current", updated: "2026-01-30", usage: 7 },
+  { name: "Cascade Components: SMB to Enterprise", type: "Case Study", audience: "Sales", status: "Current", updated: "2025-12-18", usage: 6 },
+  { name: "Medical Device CPQ Compliance Story", type: "Case Study", audience: "Prospects", status: "Planned", updated: "2026-03-05", usage: 0 },
+  { name: "CPQ vs. Spreadsheets: Buyer FAQ", type: "FAQ", audience: "Prospects", status: "Current", updated: "2026-02-20", usage: 7 },
+  { name: "Integration FAQ (ERP, CRM, PLM)", type: "FAQ", audience: "Sales", status: "Needs Update", updated: "2025-09-12", usage: 5 },
+  { name: "Visual Configuration Demo Flow", type: "Demo Script", audience: "Sales", status: "Current", updated: "2026-03-10", usage: 9 },
+  { name: "ETO Quote-to-Cash Demo Flow", type: "Demo Script", audience: "Sales", status: "In Progress", updated: "2026-02-25", usage: 3 },
+  { name: "CPQ ROI Calculator (Interactive)", type: "Solution Brief", audience: "Prospects", status: "Planned", updated: "2026-03-12", usage: 0 }
+];
+
+const dealMetrics = {
+  activeDeals: 47,
+  pipelineValue: "$14.2M",
+  avgCycle: 68,
+  winRate: "61%"
+};
+
+const verticalData = {
+  labels: ["Discrete Mfg", "Food & Bev", "Furniture", "Medical Devices", "Industrial Equipment", "Automotive Parts"],
+  data: [14, 8, 6, 7, 9, 3]
+};
+
+const winRateData = {
+  labels: ["Aug '25", "Sep '25", "Oct '25", "Nov '25", "Dec '25", "Jan '26", "Feb '26", "Mar '26"],
+  data: [54, 56, 58, 55, 60, 62, 64, 61]
+};
+
+const lossReasons = {
+  labels: ["Price", "Feature Gap", "Incumbent Advantage", "Timeline Mismatch", "Other"],
+  data: [28, 22, 25, 15, 10]
+};
+
+
+// ============================================
+// THEME
+// ============================================
+
+function getPreferredTheme() {
+  const stored = localStorage.getItem("cpq-theme");
+  if (stored) return stored;
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("cpq-theme", theme);
+  // Re-render charts if they exist
+  if (chartsInitialized) renderCharts();
+}
+
+document.getElementById("themeToggle").addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme");
+  setTheme(current === "dark" ? "light" : "dark");
+});
+
+setTheme(getPreferredTheme());
+
+
+// ============================================
+// TABS
+// ============================================
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "deals" && !chartsInitialized) {
+      chartsInitialized = true;
+      // Small delay so canvas is visible before Chart.js measures it
+      setTimeout(renderCharts, 50);
+    }
+  });
+});
+
+
+// ============================================
+// TAB 1: COMPETITIVE LANDSCAPE
+// ============================================
+
+function renderLandscape() {
+  // Stats
+  const avgWin = Math.round(competitors.reduce((s, c) => s + c.winRate, 0) / competitors.length);
+  const topThreat = competitors.filter(c => c.threat === "High").map(c => c.name).join(", ");
+
+  document.getElementById("landscape-stats").innerHTML = `
+    <div class="stat-card"><div class="label">Competitors Tracked</div><div class="value">${competitors.length}</div></div>
+    <div class="stat-card"><div class="label">Avg Win Rate</div><div class="value accent">${avgWin}%</div></div>
+    <div class="stat-card"><div class="label">Top Threats</div><div class="value" style="font-size:18px">${topThreat}</div></div>
+  `;
+
+  // Cards
+  const grid = document.getElementById("competitor-grid");
+  grid.innerHTML = competitors.map((c, i) => `
+    <div class="comp-card" data-index="${i}">
+      <div class="comp-card-header">
+        <h3>${c.name}</h3>
+        <span class="badge badge-threat-${c.threat.toLowerCase()}">${c.threat} Threat</span>
+      </div>
+      <div class="comp-meta">
+        <span class="badge badge-segment">${c.segment}</span>
+      </div>
+      <div class="comp-section">
+        <div class="comp-section-label">Strengths</div>
+        <p>${c.strengths}</p>
+      </div>
+      <div class="comp-section">
+        <div class="comp-section-label">Weaknesses</div>
+        <p>${c.weaknesses}</p>
+      </div>
+    </div>
+  `).join("");
+
+  grid.querySelectorAll(".comp-card").forEach(card => {
+    card.addEventListener("click", () => openCompModal(+card.dataset.index));
+  });
+}
+
+function openCompModal(index) {
+  const c = competitors[index];
+  const modal = document.getElementById("modal-content");
+  modal.innerHTML = `
+    <button class="modal-close" id="modal-close-btn">&times;</button>
+    <h2>${c.name}</h2>
+    <p class="modal-segment">${c.segment} | ${c.threat} Threat</p>
+    <div class="modal-grid">
+      <div class="modal-metric">
+        <div class="label">Win Rate Against</div>
+        <div class="value accent">${c.winRate}%</div>
+      </div>
+      <div class="modal-metric">
+        <div class="label">Market Segment</div>
+        <div class="value" style="font-size:18px">${c.segment}</div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <h4>Common Objections We Hear</h4>
+      <ul>${c.objections.map(o => `<li>${o}</li>`).join("")}</ul>
+    </div>
+    <div class="modal-section">
+      <h4>Key Differentiators</h4>
+      <ul>${c.differentiators.map(d => `<li>${d}</li>`).join("")}</ul>
+    </div>
+    <div class="modal-section">
+      <h4>Battlecard Talking Points</h4>
+      <ul>${c.battlecard.map(b => `<li>${b}</li>`).join("")}</ul>
+    </div>
+  `;
+  document.getElementById("modal-overlay").classList.add("open");
+  document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+}
+
+function closeModal() {
+  document.getElementById("modal-overlay").classList.remove("open");
+}
+
+document.getElementById("modal-overlay").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
+
+// ============================================
+// TAB 2: SALES ENABLEMENT
+// ============================================
+
+function renderEnablement() {
+  renderEnablementStats();
+  renderEnablementTable();
+}
+
+function renderEnablementStats() {
+  const total = enablementAssets.length;
+  const needsUpdate = enablementAssets.filter(a => a.status === "Needs Update").length;
+  const activeAssets = enablementAssets.filter(a => a.usage > 0);
+  const avgUsage = activeAssets.length ? (activeAssets.reduce((s, a) => s + a.usage, 0) / activeAssets.length).toFixed(1) : "0";
+
+  document.getElementById("enablement-stats").innerHTML = `
+    <div class="stat-card"><div class="label">Total Assets</div><div class="value">${total}</div></div>
+    <div class="stat-card"><div class="label">Needs Update</div><div class="value" style="color:var(--threat-medium)">${needsUpdate}</div></div>
+    <div class="stat-card"><div class="label">Avg Usage Score</div><div class="value accent">${avgUsage}/10</div></div>
+  `;
+}
+
+function renderEnablementTable() {
+  const typeFilter = document.getElementById("filter-type").value;
+  const statusFilter = document.getElementById("filter-status").value;
+
+  const filtered = enablementAssets.filter(a => {
+    if (typeFilter !== "all" && a.type !== typeFilter) return false;
+    if (statusFilter !== "all" && a.status !== statusFilter) return false;
+    return true;
+  });
+
+  const statusClass = (s) => s.toLowerCase().replace(/\s+/g, "-");
+
+  document.getElementById("enablement-body").innerHTML = filtered.map(a => `
+    <tr>
+      <td style="font-weight:500">${a.name}</td>
+      <td>${a.type}</td>
+      <td>${a.audience}</td>
+      <td><span class="status-pill status-${statusClass(a.status)}">${a.status}</span></td>
+      <td style="color:var(--muted)">${a.updated}</td>
+      <td>
+        <div class="usage-bar-wrap">
+          <div class="usage-bar"><div class="usage-bar-fill" style="width:${a.usage * 10}%"></div></div>
+          <span style="font-size:12px;color:var(--muted)">${a.usage}</span>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+document.getElementById("filter-type").addEventListener("change", renderEnablementTable);
+document.getElementById("filter-status").addEventListener("change", renderEnablementTable);
+
+
+// ============================================
+// TAB 3: DEAL INTELLIGENCE
+// ============================================
+
+let chartsInitialized = false;
+let chartInstances = [];
+
+function getChartColors() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  return {
+    accent: isDark ? "#8a9a7b" : "#5c6b50",
+    text: isDark ? "#e8e8e8" : "#1a1a1a",
+    muted: isDark ? "#888" : "#6b6b6b",
+    border: isDark ? "#222" : "#d5d3cf",
+    gridColor: isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)",
+    accentAlpha: isDark ? "rgba(138,154,123,.3)" : "rgba(92,107,80,.25)",
+    lossColors: isDark
+      ? ["#c0392b", "#e67e22", "#8a9a7b", "#3498db", "#555"]
+      : ["#c0392b", "#d35400", "#5c6b50", "#2980b9", "#999"]
+  };
+}
+
+function renderDealStats() {
+  document.getElementById("deal-stats").innerHTML = `
+    <div class="stat-card"><div class="label">Active Deals</div><div class="value">${dealMetrics.activeDeals}</div></div>
+    <div class="stat-card"><div class="label">Pipeline Value</div><div class="value accent">${dealMetrics.pipelineValue}</div></div>
+    <div class="stat-card"><div class="label">Avg Deal Cycle</div><div class="value">${dealMetrics.avgCycle} days</div></div>
+    <div class="stat-card"><div class="label">Win Rate</div><div class="value accent">${dealMetrics.winRate}</div></div>
+  `;
+}
+
+function renderCharts() {
+  const colors = getChartColors();
+
+  // Destroy existing
+  chartInstances.forEach(c => c.destroy());
+  chartInstances = [];
+
+  const defaultOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { display: false }
+    }
+  };
+
+  // Verticals bar chart
+  const ctx1 = document.getElementById("chart-verticals").getContext("2d");
+  chartInstances.push(new Chart(ctx1, {
+    type: "bar",
+    data: {
+      labels: verticalData.labels,
+      datasets: [{
+        data: verticalData.data,
+        backgroundColor: colors.accent,
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      ...defaultOptions,
+      scales: {
+        x: {
+          ticks: { color: colors.muted, font: { size: 11 } },
+          grid: { display: false },
+          border: { color: colors.border }
+        },
+        y: {
+          ticks: { color: colors.muted, font: { size: 11 }, stepSize: 5 },
+          grid: { color: colors.gridColor },
+          border: { display: false }
+        }
+      }
+    }
+  }));
+
+  // Loss reasons donut
+  const ctx2 = document.getElementById("chart-loss").getContext("2d");
+  chartInstances.push(new Chart(ctx2, {
+    type: "doughnut",
+    data: {
+      labels: lossReasons.labels,
+      datasets: [{
+        data: lossReasons.data,
+        backgroundColor: colors.lossColors,
+        borderWidth: 0,
+        spacing: 2
+      }]
+    },
+    options: {
+      ...defaultOptions,
+      cutout: "60%",
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom",
+          labels: {
+            color: colors.muted,
+            font: { size: 11 },
+            padding: 12,
+            usePointStyle: true,
+            pointStyleWidth: 8
+          }
+        }
+      }
+    }
+  }));
+
+  // Win rate line chart
+  const ctx3 = document.getElementById("chart-winrate").getContext("2d");
+  chartInstances.push(new Chart(ctx3, {
+    type: "line",
+    data: {
+      labels: winRateData.labels,
+      datasets: [{
+        data: winRateData.data,
+        borderColor: colors.accent,
+        backgroundColor: colors.accentAlpha,
+        fill: true,
+        tension: .35,
+        pointRadius: 4,
+        pointBackgroundColor: colors.accent,
+        pointBorderWidth: 0
+      }]
+    },
+    options: {
+      ...defaultOptions,
+      aspectRatio: 3,
+      scales: {
+        x: {
+          ticks: { color: colors.muted, font: { size: 11 } },
+          grid: { display: false },
+          border: { color: colors.border }
+        },
+        y: {
+          min: 45,
+          max: 75,
+          ticks: { color: colors.muted, font: { size: 11 }, callback: v => v + "%" },
+          grid: { color: colors.gridColor },
+          border: { display: false }
+        }
+      }
+    }
+  }));
+}
+
+
+// ============================================
+// INIT
+// ============================================
+
+renderLandscape();
+renderEnablement();
+renderDealStats();
+</script>
+
+</body>
+</html>
